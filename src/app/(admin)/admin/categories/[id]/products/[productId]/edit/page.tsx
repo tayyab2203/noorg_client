@@ -34,6 +34,7 @@ export default function AdminCategoryProductEditPage() {
   const [material, setMaterial] = useState("");
   const [SKU, setSKU] = useState("");
   const [status, setStatus] = useState<ProductStatus>(PRODUCT_STATUS.ACTIVE);
+  const [isNewArrival, setIsNewArrival] = useState(false);
   const [images, setImages] = useState<ProductImage[]>([{ ...defaultImage }]);
   const [variants, setVariants] = useState<ProductVariant[]>([{ ...defaultVariant, variantSKU: "" }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,6 +53,7 @@ export default function AdminCategoryProductEditPage() {
     setMaterial(product.material ?? "");
     setSKU(product.SKU ?? "");
     setStatus(product.status ?? PRODUCT_STATUS.ACTIVE);
+    setIsNewArrival(product.isNewArrival ?? false);
     setImages(product.images?.length ? product.images : [{ ...defaultImage }]);
     setVariants(product.variants?.length ? product.variants : [{ ...defaultVariant, variantSKU: "" }]);
     setInitialized(true);
@@ -103,22 +105,28 @@ export default function AdminCategoryProductEditPage() {
     }
     const imagesValid = images.filter((im) => im.url.trim());
     setIsSubmitting(true);
+    
+    const updatePayload = {
+      name: name.trim(),
+      slug: slug.trim() || undefined,
+      description: description.trim(),
+      price: priceNum,
+      salePrice: salePriceNum ?? null,
+      material: material.trim(),
+      SKU: SKU.trim(),
+      status,
+      categoryId: categoryId,
+      images: imagesValid.length ? imagesValid : [{ url: "/placeholder.svg", altText: "", order: 0 }],
+      variants: variantsValid,
+      isNewArrival: Boolean(isNewArrival), // Explicitly convert to boolean
+    };
+    
     try {
-      await updateProduct(productId, {
-        name: name.trim(),
-        slug: slug.trim() || undefined,
-        description: description.trim(),
-        price: priceNum,
-        salePrice: salePriceNum ?? null,
-        material: material.trim(),
-        SKU: SKU.trim(),
-        status,
-        categoryId: categoryId,
-        images: imagesValid.length ? imagesValid : [{ url: "/placeholder.svg", altText: "", order: 0 }],
-        variants: variantsValid,
-      });
+      await updateProduct(productId, updatePayload);
       queryClient.invalidateQueries(productsKeys.all);
       queryClient.invalidateQueries(productsKeys.id(productId));
+      // Invalidate new arrivals cache
+      queryClient.invalidateQueries({ queryKey: ["new-arrivals"] });
       router.push(ADMIN_ROUTES.categoryDetail(categoryId));
     } catch (e) {
       setError(getProductsErrorMessage(e) ?? "Failed to update product");
@@ -257,6 +265,20 @@ export default function AdminCategoryProductEditPage() {
               ))}
             </select>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="isNewArrival"
+            checked={isNewArrival}
+            onChange={(e) => setIsNewArrival(e.target.checked)}
+            className="h-4 w-4 rounded border-[#ddd] text-[#C4A747] focus:ring-[#C4A747]"
+          />
+          <label htmlFor="isNewArrival" className="text-sm font-medium" style={{ color: COLORS.primaryDark }}>
+            Mark as New Arrival
+          </label>
+          <span className="text-xs text-[#333333]/60">(Will appear on New Arrivals page - product must be ACTIVE status)</span>
         </div>
 
         <div>

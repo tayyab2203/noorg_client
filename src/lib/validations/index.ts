@@ -75,6 +75,7 @@ export const productCreateSchema = z.object({
   categoryId: z.string().default(""),
   images: z.array(productImageSchema).default([]),
   variants: z.array(productVariantSchema).min(1, "At least one variant required"),
+  isNewArrival: z.boolean().default(false),
 });
 /** Product update body (partial) */
 export const productUpdateSchema = productCreateSchema.partial();

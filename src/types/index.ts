@@ -52,6 +52,7 @@ export interface Product {
   status: (typeof PRODUCT_STATUS)[keyof typeof PRODUCT_STATUS];
   images: ProductImage[];
   variants: ProductVariant[];
+  isNewArrival: boolean;
 }
 
 export interface Collection {

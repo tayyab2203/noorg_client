@@ -121,7 +121,7 @@ export function ProductCard({
     onSale && product.price > 0
       ? Math.round((1 - product.salePrice! / product.price) * 100)
       : 0;
-  const isNew = product.status === "ACTIVE";
+  const isNewArrival = product.isNewArrival ?? false;
 
   const showQuickActions = hover;
 
@@ -184,7 +184,7 @@ export function ProductCard({
               -{saleDiscount}%
             </span>
           )}
-          {isNew && !onSale && (
+          {isNewArrival && (
             <span
               className="rounded px-2 py-1 font-semibold text-white max-sm:text-[10px] max-sm:px-1.5 max-sm:py-0.5"
               style={{

@@ -34,6 +34,7 @@ export interface IProduct {
   material: string;
   rating: number;
   SKU: string;
+  isNewArrival: boolean;
   createdAt: Date;
 }
 
@@ -55,6 +56,7 @@ const ProductSchema = new Schema<IProduct>(
     material: { type: String, default: "" },
     rating: { type: Number, default: 0, min: 0, max: 5 },
     SKU: { type: String, required: true },
+    isNewArrival: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
   },
   { timestamps: true }

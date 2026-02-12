@@ -33,6 +33,7 @@ export default function AdminCategoryProductNewPage() {
   const [material, setMaterial] = useState("");
   const [SKU, setSKU] = useState("");
   const [status, setStatus] = useState<ProductStatus>(PRODUCT_STATUS.ACTIVE);
+  const [isNewArrival, setIsNewArrival] = useState(false);
   const [images, setImages] = useState<ProductImage[]>([{ ...defaultImage }]);
   const [variants, setVariants] = useState<ProductVariant[]>([{ ...defaultVariant, variantSKU: "" }]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -102,6 +103,7 @@ export default function AdminCategoryProductNewPage() {
         categoryId: categoryId,
         images: imagesValid.length ? imagesValid : [{ url: "/placeholder.svg", altText: "", order: 0 }],
         variants: variantsValid,
+        isNewArrival,
       });
 
       // Add product to category's productIds
@@ -113,6 +115,8 @@ export default function AdminCategoryProductNewPage() {
       }
 
       queryClient.invalidateQueries(productsKeys.all);
+      // Invalidate new arrivals cache
+      queryClient.invalidateQueries({ queryKey: ["new-arrivals"] });
       router.push(ADMIN_ROUTES.categoryDetail(categoryId));
     } catch (e) {
       setError(getProductsErrorMessage(e) ?? "Failed to create product");
@@ -251,6 +255,20 @@ export default function AdminCategoryProductNewPage() {
               ))}
             </select>
           </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="isNewArrival"
+            checked={isNewArrival}
+            onChange={(e) => setIsNewArrival(e.target.checked)}
+            className="h-4 w-4 rounded border-[#ddd] text-[#C4A747] focus:ring-[#C4A747]"
+          />
+          <label htmlFor="isNewArrival" className="text-sm font-medium" style={{ color: COLORS.primaryDark }}>
+            Mark as New Arrival
+          </label>
+          <span className="text-xs text-[#333333]/60">(Will appear on New Arrivals page - product must be ACTIVE status)</span>
         </div>
 
         <div>

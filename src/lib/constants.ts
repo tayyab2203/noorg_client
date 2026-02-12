@@ -12,6 +12,8 @@ export const ROUTES = {
   home: "/",
   shop: "/shop",
   collections: "/collections",
+  newArrivals: "/collections/new-arrivals",
+  sale: "/sale",
   search: "/search",
   about: "/about",
   contact: "/contact",
@@ -41,6 +43,8 @@ export const ADMIN_ROUTES = {
   inventory: "/admin/inventory",
   payments: "/admin/payments",
   settings: "/admin/settings",
+  newArrivals: "/admin/new-arrivals",
+  sale: "/admin/sale",
 } as const;
 
 export const COLORS = {

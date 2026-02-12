@@ -112,7 +112,10 @@ export function Header() {
         <nav className="hidden items-center gap-8 lg:flex">
           <Link
             href={ROUTES.home}
-            className="text-base font-medium text-[#333333] transition-colors hover:text-[#C4A747]"
+            className={cn(
+              "text-base font-medium transition-colors hover:text-[#C4A747]",
+              pathname === ROUTES.home ? "text-[#C4A747]" : "text-[#333333]"
+            )}
           >
             Home
           </Link>
@@ -120,7 +123,12 @@ export function Header() {
           <div className="group relative">
             <Link
               href={ROUTES.collections}
-              className="inline-flex items-center text-base font-medium text-[#333333] transition-colors hover:text-[#C4A747]"
+              className={cn(
+                "inline-flex items-center text-base font-medium transition-colors hover:text-[#C4A747]",
+                pathname === ROUTES.collections || pathname.startsWith(`${ROUTES.collections}/`) && pathname !== ROUTES.newArrivals
+                  ? "text-[#C4A747]"
+                  : "text-[#333333]"
+              )}
             >
               Collections
             </Link>
@@ -151,11 +159,32 @@ export function Header() {
               </div>
             </div>
           </div>
+          <Link
+            href={ROUTES.newArrivals}
+            className={cn(
+              "text-base font-medium transition-colors hover:text-[#C4A747]",
+              pathname === ROUTES.newArrivals ? "text-[#C4A747]" : "text-[#333333]"
+            )}
+          >
+            New Arrivals
+          </Link>
+          <Link
+            href={ROUTES.sale}
+            className={cn(
+              "text-base font-medium transition-colors hover:text-[#C4A747]",
+              pathname === ROUTES.sale ? "text-[#C4A747]" : "text-[#333333]"
+            )}
+          >
+            Sale
+          </Link>
           {NAV_LINKS.map(({ href, label }) => (
             <Link
               key={href}
               href={href}
-              className="text-base font-medium text-[#333333] transition-colors hover:text-[#C4A747]"
+              className={cn(
+                "text-base font-medium transition-colors hover:text-[#C4A747]",
+                pathname === href ? "text-[#C4A747]" : "text-[#333333]"
+              )}
             >
               {label}
             </Link>

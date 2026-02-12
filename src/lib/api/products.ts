@@ -92,6 +92,7 @@ export interface CreateProductPayload {
   categoryId?: string;
   images?: ProductImage[];
   variants: ProductVariant[];
+  isNewArrival?: boolean;
 }
 export async function createProduct(payload: CreateProductPayload): Promise<Product> {
   const res = await apiClient.post<{ data?: Product } | Product>("/api/products", payload);

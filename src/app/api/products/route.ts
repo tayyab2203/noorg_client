@@ -25,6 +25,7 @@ function toProductJSON(doc: { _id: { toString: () => string }; [k: string]: unkn
     status: (o.status as ProductType["status"]) ?? PRODUCT_STATUS.ACTIVE,
     images: (o.images as ProductType["images"]) ?? [],
     variants: (o.variants as ProductType["variants"]) ?? [],
+    isNewArrival: (o.isNewArrival as boolean) ?? false,
   };
 }
 
@@ -35,6 +36,8 @@ export async function GET(request: Request) {
     const ids = searchParams.getAll("id");
     const slug = searchParams.get("slug");
     const q = (searchParams.get("q") ?? "").trim();
+    const newArrivals = searchParams.get("newArrivals") === "true";
+    const sale = searchParams.get("sale") === "true";
 
     const session = await auth();
     const isAdmin = (session?.user as { role?: string } | undefined)?.role === "ADMIN";
@@ -63,6 +66,66 @@ export async function GET(request: Request) {
           { description: { $regex: q, $options: "i" } },
         ],
       }).lean();
+      return NextResponse.json(products.map((p) => toProductJSON(p as Parameters<typeof toProductJSON>[0])));
+    }
+
+    // Filter for new arrivals (products marked as new arrivals by admin)
+    if (newArrivals) {
+      // Always include status filter for public users, even if admin
+      const statusFilter = isAdmin ? {} : { status: PRODUCT_STATUS.ACTIVE };
+      const query = {
+        ...statusFilter,
+        isNewArrival: { $ne: false, $exists: true }, // Match true or explicitly set (not false, and field exists)
+      };
+      
+      // Strict query: must have isNewArrival explicitly set to true
+      const strictQuery = {
+        ...statusFilter,
+        isNewArrival: true,
+      };
+      
+      console.log(`[api/products] New arrivals - isAdmin: ${isAdmin}`);
+      console.log(`[api/products] Status filter:`, JSON.stringify(statusFilter));
+      console.log(`[api/products] Strict query:`, JSON.stringify(strictQuery));
+      
+      // Debug: Check all products and their isNewArrival status
+      const allProducts = await Product.find(statusFilter).select('_id name isNewArrival status').limit(10).lean();
+      console.log(`[api/products] Sample products:`, allProducts.map((p: any) => ({
+        id: p._id?.toString(),
+        name: p.name,
+        isNewArrival: p.isNewArrival === undefined ? 'undefined' : p.isNewArrival,
+        status: p.status
+      })));
+      
+      // Also check total products with isNewArrival for debugging
+      const totalNewArrivals = await Product.countDocuments({ isNewArrival: true });
+      const totalActiveNewArrivals = await Product.countDocuments({ status: PRODUCT_STATUS.ACTIVE, isNewArrival: true });
+      const totalProducts = await Product.countDocuments(statusFilter);
+      const productsWithoutField = await Product.countDocuments({ 
+        ...statusFilter,
+        $or: [
+          { isNewArrival: { $exists: false } },
+          { isNewArrival: null }
+        ]
+      });
+      console.log(`[api/products] Stats - Total products: ${totalProducts}, With isNewArrival=true: ${totalNewArrivals}, Active+NewArrival: ${totalActiveNewArrivals}, Products missing field: ${productsWithoutField}`);
+      
+      const products = await Product.find(strictQuery)
+        .sort({ createdAt: -1 })
+        .lean();
+      const result = products.map((p) => toProductJSON(p as Parameters<typeof toProductJSON>[0]));
+      console.log(`[api/products] Found ${result.length} products matching strict query`);
+      return NextResponse.json(result);
+    }
+
+    // Filter for sale products (products with salePrice)
+    if (sale) {
+      const products = await Product.find({
+        ...filter,
+        salePrice: { $ne: null, $exists: true },
+      })
+        .sort({ createdAt: -1 })
+        .lean();
       return NextResponse.json(products.map((p) => toProductJSON(p as Parameters<typeof toProductJSON>[0])));
     }
 
@@ -112,6 +175,7 @@ export async function POST(request: Request) {
       categoryId: data.categoryId,
       images: data.images,
       variants: data.variants,
+      isNewArrival: data.isNewArrival ?? false,
     });
 
     const doc = product.toObject ? product.toObject() : product;

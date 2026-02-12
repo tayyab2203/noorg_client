@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { Package, ShoppingBag, LayoutDashboard, AlertTriangle, ListOrdered } from "lucide-react";
 import { useAdminOrders } from "@/lib/api/orders";
 import { useAdminInventory } from "@/lib/api/admin";
-import { ADMIN_ROUTES, COLORS } from "@/lib/constants";
+import { ADMIN_ROUTES, COLORS, ROUTES } from "@/lib/constants";
 import { formatPrice } from "@/lib/utils";
 
 const RECENT_ORDERS_COUNT = 10;
@@ -228,6 +228,27 @@ export default function AdminDashboardPage() {
               </Link>
             </li>
           </ul>
+          <div className="mt-6 border-t border-[#eee] pt-4">
+            <h3 className="text-sm font-semibold text-[#333333] mb-2">Store Pages</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link href={ROUTES.newArrivals} target="_blank" className="text-sm font-medium hover:underline" style={{ color: COLORS.goldAccent }}>
+                  View New Arrivals Page
+                </Link>
+                <p className="text-xs text-[#333333]/60 mt-0.5">
+                  Shows products created in the last 30 days
+                </p>
+              </li>
+              <li>
+                <Link href={ROUTES.sale} target="_blank" className="text-sm font-medium hover:underline" style={{ color: COLORS.goldAccent }}>
+                  View Sale Page
+                </Link>
+                <p className="text-xs text-[#333333]/60 mt-0.5">
+                  Shows products with sale prices. Set salePrice when editing products to add them to sale.
+                </p>
+              </li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>

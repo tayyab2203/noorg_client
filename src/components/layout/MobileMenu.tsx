@@ -93,8 +93,8 @@ export function MobileMenu({ onSearchOpen }: MobileMenuProps) {
   const navLinks = [
     { href: ROUTES.home, label: "Home", icon: Home },
     { href: ROUTES.collections, label: "Collections", icon: LayoutGrid, hasSubmenu: true },
-    { href: `${ROUTES.collections}/new-arrivals`, label: "New Arrivals", icon: Sparkles },
-    { href: `${ROUTES.shop}?sale=1`, label: "Sale", icon: Percent },
+    { href: ROUTES.newArrivals, label: "New Arrivals", icon: Sparkles },
+    { href: ROUTES.sale, label: "Sale", icon: Percent },
     { href: ROUTES.about, label: "Who We Are", icon: Info },
     { href: ROUTES.contact, label: "Contact", icon: Mail },
   ];

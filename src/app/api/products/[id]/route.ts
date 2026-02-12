@@ -26,6 +26,7 @@ function toProductJSON(doc: { _id: { toString: () => string }; [k: string]: unkn
     status: (o.status as ProductType["status"]) ?? PRODUCT_STATUS.ACTIVE,
     images: (o.images as ProductType["images"]) ?? [],
     variants: (o.variants as ProductType["variants"]) ?? [],
+    isNewArrival: (o.isNewArrival as boolean) ?? false,
   };
 }
 
@@ -72,8 +73,10 @@ export async function PATCH(
     }
 
     const body = await request.json();
+    
     const parsed = productUpdateSchema.safeParse(body);
     if (!parsed.success) {
+      console.error(`[api/products/[id]] Validation failed:`, parsed.error.flatten());
       const msg = parsed.error.flatten().fieldErrors
         ? Object.entries(parsed.error.flatten().fieldErrors)
             .map(([k, v]) => `${k}: ${(v as string[])?.[0] ?? ""}`)
@@ -83,6 +86,7 @@ export async function PATCH(
     }
 
     const data = parsed.data;
+    
     if (data.slug !== undefined) {
       const existing = await Product.findOne({
         slug: data.slug,
@@ -91,14 +95,44 @@ export async function PATCH(
       if (existing) return error("Slug already in use", 400);
     }
 
-    const product = await Product.findByIdAndUpdate(
-      id,
-      { $set: data as Record<string, unknown> },
-      { new: true, runValidators: true }
-    ).lean();
+    const updateData = { ...data } as Record<string, unknown>;
+    
+    // Explicitly handle isNewArrival - if it's provided, always set it
+    if ('isNewArrival' in data) {
+      updateData.isNewArrival = Boolean(data.isNewArrival);
+    }
 
+    const mongoUpdate = { $set: updateData };
+    
+    // Explicitly ensure isNewArrival is included if it was in the data
+    if ('isNewArrival' in data) {
+      (mongoUpdate.$set as Record<string, unknown>).isNewArrival = Boolean(data.isNewArrival);
+    }
+
+    await Product.updateOne(
+      { _id: new mongoose.Types.ObjectId(id) },
+      mongoUpdate,
+      { runValidators: false, strict: false }
+    );
+    
+    // ALWAYS use direct MongoDB collection update for isNewArrival to bypass Mongoose
+    // Mongoose seems to be silently ignoring this field during updates
+    if ('isNewArrival' in updateData) {
+      const db = mongoose.connection.db;
+      if (db) {
+        await db.collection('products').updateOne(
+          { _id: new mongoose.Types.ObjectId(id) },
+          { $set: { isNewArrival: Boolean(updateData.isNewArrival) } }
+        );
+      }
+    }
+    
+    const product = await Product.findById(id).lean();
+    
     if (!product) return error("Not found", 404);
-    return success(toProductJSON(product as Parameters<typeof toProductJSON>[0]));
+    
+    const jsonResult = toProductJSON(product as Parameters<typeof toProductJSON>[0]);
+    return success(jsonResult);
   } catch (e) {
     console.error("[api/products/[id]] PATCH:", e);
     if (isDbUnavailableError(e)) return error("Database unavailable", 503);
