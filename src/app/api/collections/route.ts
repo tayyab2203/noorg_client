@@ -32,6 +32,7 @@ function toProductJSON(doc: { _id: { toString: () => string }; [k: string]: unkn
     status: (o.status as ProductType["status"]) ?? PRODUCT_STATUS.ACTIVE,
     images: (o.images as ProductType["images"]) ?? [],
     variants: (o.variants as ProductType["variants"]) ?? [],
+    isNewArrival: (o.isNewArrival as boolean) ?? false,
   };
 }
 
