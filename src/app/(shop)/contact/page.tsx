@@ -16,8 +16,8 @@ import { Container } from "@/components/layout/Container";
 import { contactFormSchema, type ContactFormValues } from "@/lib/validations";
 
 const CONTACT_INFO = {
-  email: "hello@noor-g.com",
-  phone: "+1 (234) 567-890",
+  email: "noorgfabrics@gmail.com",
+  phone: "+92 319 0409623",
   address: "Ghanta gher Alang, near Shah gardez, Multan, Punjab, Pakistan",
   hours: "Mon–Fri: 9:00 AM – 6:00 PM\nSat: 10:00 AM – 4:00 PM\nSun: Closed",
 };
