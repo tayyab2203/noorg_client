@@ -45,7 +45,11 @@ export async function PATCH(
     }
 
     // Keep product aggregate rating correct after moderation changes
-    await updateProductAggregateRating(review.productId as mongoose.Types.ObjectId);
+    const pid = (review as unknown as { productId?: mongoose.Types.ObjectId }).productId;
+    if (!pid) {
+      return NextResponse.json({ error: "Review is missing productId" }, { status: 500 });
+    }
+    await updateProductAggregateRating(pid);
 
     return NextResponse.json({ ok: true });
   } catch (e) {
