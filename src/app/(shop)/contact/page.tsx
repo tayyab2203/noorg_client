@@ -18,7 +18,7 @@ import { contactFormSchema, type ContactFormValues } from "@/lib/validations";
 const CONTACT_INFO = {
   email: "hello@noor-g.com",
   phone: "+1 (234) 567-890",
-  address: "123 Fashion Avenue, Suite 100, New York, NY 10001",
+  address: "Ghanta gher Alang, near Shah gardez, Multan, Punjab, Pakistan",
   hours: "Mon–Fri: 9:00 AM – 6:00 PM\nSat: 10:00 AM – 4:00 PM\nSun: Closed",
 };
 
@@ -248,16 +248,7 @@ export default function ContactPage() {
           </Accordion>
         </section>
 
-        {/* Google Maps placeholder */}
-        <section className="mt-16">
-          <h2 className="text-2xl font-bold text-[#333333]">Find Us</h2>
-          <div
-            className="mt-4 flex aspect-video w-full items-center justify-center rounded-xl border border-[#333333]/10 bg-[#F5F3EE] text-[#333333]/60"
-            aria-hidden
-          >
-            <span className="text-sm">Google Maps embed placeholder</span>
-          </div>
-        </section>
+        {/* Map removed per request */}
       </Container>
     </>
   );
