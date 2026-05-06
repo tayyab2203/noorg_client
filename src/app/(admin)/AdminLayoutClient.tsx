@@ -11,6 +11,7 @@ import {
   Users,
   PackageCheck,
   CreditCard,
+  Star,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const SIDEBAR_LINKS = [
   { href: ADMIN_ROUTES.orders, label: "Orders", icon: ShoppingBag },
   { href: ADMIN_ROUTES.customers, label: "Customers", icon: Users },
   { href: ADMIN_ROUTES.inventory, label: "Inventory", icon: PackageCheck },
+  { href: ADMIN_ROUTES.reviews, label: "Reviews", icon: Star },
   { href: ADMIN_ROUTES.payments, label: "Payments", icon: CreditCard },
   { href: ADMIN_ROUTES.settings, label: "Settings", icon: Settings },
 ];

@@ -41,6 +41,7 @@ export const ADMIN_ROUTES = {
   customers: "/admin/customers",
   customerDetail: (id: string) => `/admin/customers/${id}`,
   inventory: "/admin/inventory",
+  reviews: "/admin/reviews",
   payments: "/admin/payments",
   settings: "/admin/settings",
   newArrivals: "/admin/new-arrivals",
@@ -119,20 +120,7 @@ export type UserRole = (typeof USER_ROLE)[keyof typeof USER_ROLE];
 // ---------------------------------------------------------------------------
 
 export const SIZE_OPTIONS = [
-  "XS",
-  "S",
-  "M",
-  "L",
-  "XL",
-  "XXL",
-  "36",
-  "38",
-  "40",
-  "42",
-  "44",
-  "46",
-  "48",
-  "ONE_SIZE",
+  "STANDARD",
 ] as const;
 
 export type SizeOption = (typeof SIZE_OPTIONS)[number];

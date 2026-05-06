@@ -274,6 +274,12 @@ export default function OrderDetailPage() {
     order.orderStatus === ORDER_STATUS.PENDING ||
     order.orderStatus === ORDER_STATUS.PROCESSING;
 
+  const handlePrintInvoice = () => {
+    if (!id) return;
+    const url = `${ROUTES.account}/orders/${id}/invoice`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -442,6 +448,7 @@ export default function OrderDetailPage() {
           <Button
             variant="outline"
             className="w-full justify-start border-[#ddd]"
+            onClick={handlePrintInvoice}
           >
             <Download className="mr-2 h-4 w-4" />
             Download Invoice

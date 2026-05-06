@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { PAYMENT_METHOD, PRODUCT_STATUS } from "@/lib/constants";
+import { PAYMENT_METHOD, PRODUCT_STATUS, REVIEW_STATUS } from "@/lib/constants";
 
 export const contactFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -56,7 +56,7 @@ export const productImageSchema = z.object({
 });
 /** Product variant for create/update */
 export const productVariantSchema = z.object({
-  size: z.string().min(1),
+  size: z.enum(["STANDARD"]),
   color: z.string().min(1),
   stock: z.number().int().min(0),
   variantSKU: z.string().min(1),
@@ -90,6 +90,18 @@ export const collectionCreateSchema = z.object({
   productIds: z.array(z.string().min(1)).default([]),
 });
 export const collectionUpdateSchema = collectionCreateSchema.partial();
+
+/** Review create body */
+export const reviewCreateSchema = z.object({
+  productId: z.string().min(1, "Product ID required"),
+  rating: z.number().int().min(1, "Rating must be at least 1").max(5, "Rating must be at most 5"),
+  comment: z.string().trim().min(3, "Comment is too short").max(2000, "Comment is too long"),
+});
+
+/** Review admin moderation body */
+export const reviewUpdateSchema = z.object({
+  status: z.enum(Object.values(REVIEW_STATUS) as [string, ...string[]]),
+}).partial();
 
 /** Order create body (items without unitPrice; server computes from Product) */
 export const orderCreateSchema = z.object({

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { WhatsAppButton } from "@/components/layout/WhatsAppButton";
 import { cn } from "@/lib/utils";
 
 /**
@@ -39,6 +40,9 @@ export function StoreShell({ children }: { children: React.ReactNode }) {
       <div className={cn(mounted && isAdmin && "hidden")}>
         <Footer />
         <BottomNav />
+      </div>
+      <div className={cn(mounted && isAdmin && "hidden")}>
+        <WhatsAppButton />
       </div>
     </>
   );

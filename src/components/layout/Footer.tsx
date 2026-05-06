@@ -28,8 +28,8 @@ const FOOTER_LINKS = {
     { label: "FAQs", href: ROUTES.contact },
   ],
   contact: [
-    { label: "Email", href: "mailto:hello@noor-g.com", value: "hello@noor-g.com" },
-    { label: "Phone", href: "tel:+1234567890", value: "+1 (234) 567-890" },
+    { label: "Email", href: "mailto:noorgfabrics@gmail.com", value: "noorgfabrics@gmail.com" },
+    { label: "Phone", href: "tel:+923190409623", value: "+92 319 0409623" },
   ],
 };
 

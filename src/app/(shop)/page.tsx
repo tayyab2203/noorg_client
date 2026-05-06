@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,16 +14,59 @@ import { ROUTES } from "@/lib/constants";
 import { useCollections } from "@/lib/api/products";
 import type { Product } from "@/types";
 
-const HERO_IMAGE = "/hero-banner.jpg";
+const HERO_BG_IMAGE = "/hero-banner.jpg";
+const HERO_LEFT_IMAGE = "/brother-left.png";
+const HERO_RIGHT_IMAGE = "/brother-right.png";
 const GOLD = "#C4A747";
 const CREAM = "#F5F3EE";
 const DARK = "#333333";
 
+type HomepageReview = {
+  id: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+  user: { name: string; image: string | null };
+  product: { name: string; slug: string };
+};
 
-const TESTIMONIALS = [
-  { id: 1, name: "Sarah K.", city: "Lahore", rating: 5, text: "The quality is exceptional. I ordered the lawn collection and the fabric is so soft. Will definitely order again." },
-  { id: 2, name: "Ayesha M.", city: "Karachi", rating: 5, text: "Beautiful designs and fast delivery. NOOR-G has become my go-to for traditional and modern wear." },
-  { id: 3, name: "Fatima R.", city: "Islamabad", rating: 5, text: "Love the cotton range—perfect for our climate. The fit is true to size and the stitching is neat." },
+const STATIC_HOME_REVIEWS: HomepageReview[] = [
+  {
+    id: "static-1",
+    rating: 5,
+    comment:
+      "Quality is premium and stitching is very neat. Delivery was fast too.",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    user: { name: "Ahmed R.", image: null },
+    product: { name: "Cotton Collection", slug: "" },
+  },
+  {
+    id: "static-2",
+    rating: 5,
+    comment:
+      "Loved the fabric and finishing—looks even better in real life. Highly recommended.",
+    createdAt: "2026-01-02T00:00:00.000Z",
+    user: { name: "Ayesha K.", image: null },
+    product: { name: "Lawn Collection", slug: "" },
+  },
+  {
+    id: "static-3",
+    rating: 4,
+    comment:
+      "Comfortable for daily wear and the color stayed perfect after wash.",
+    createdAt: "2026-01-03T00:00:00.000Z",
+    user: { name: "Hassan M.", image: null },
+    product: { name: "Everyday Essentials", slug: "" },
+  },
+  {
+    id: "static-4",
+    rating: 5,
+    comment:
+      "Beautiful design and very soft fabric. The overall experience was smooth.",
+    createdAt: "2026-01-04T00:00:00.000Z",
+    user: { name: "Fatima S.", image: null },
+    product: { name: "New Arrivals", slug: "" },
+  },
 ];
 
 const sectionFade = {
@@ -48,22 +91,40 @@ async function fetchProducts(): Promise<Product[]> {
   }
 }
 
+async function fetchHomepageReviews(): Promise<HomepageReview[]> {
+  const res = await fetch("/api/reviews?limit=6", { cache: "no-store" });
+  if (!res.ok) return [];
+  const data = await res.json().catch(() => []);
+  return Array.isArray(data) ? (data as HomepageReview[]) : [];
+}
+
 export default function HomePage() {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [newsletterStatus, setNewsletterStatus] = useState<"idle" | "loading" | "success">("idle");
   const [testimonialIndex, setTestimonialIndex] = useState(0);
 
   const { data: products = [] } = useQuery({ queryKey: ["products"], queryFn: fetchProducts });
+  const { data: homepageReviews = [] } = useQuery({
+    queryKey: ["homepageReviews"],
+    queryFn: fetchHomepageReviews,
+  });
+  const testimonials = useMemo(() => {
+    const dynamic = homepageReviews.filter(
+      (r) => !STATIC_HOME_REVIEWS.some((s) => s.id === r.id)
+    );
+    return [...STATIC_HOME_REVIEWS, ...dynamic];
+  }, [homepageReviews]);
   const { data: collections = [] } = useCollections();
   const bestsellers = products.slice(0, 4);
   const featuredCollections = collections.slice(0, 6);
 
   useEffect(() => {
+    if (!testimonials.length) return;
     const t = setInterval(() => {
-      setTestimonialIndex((i) => (i + 1) % TESTIMONIALS.length);
+      setTestimonialIndex((i) => (i + 1) % testimonials.length);
     }, 5000);
     return () => clearInterval(t);
-  }, []);
+  }, [testimonials.length]);
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +140,7 @@ export default function HomePage() {
     <>
       {/* 1. HERO - Full-bleed, no top/right gap (negative mt cancels Container py-8) */}
       <section
-        className="relative -mt-8 flex min-h-[500px] w-full min-w-full items-center justify-center overflow-hidden md:min-h-[600px] lg:min-h-[max(100vh,700px)]"
+        className="relative -mt-8 flex min-h-[520px] w-full min-w-full items-center justify-center overflow-hidden md:min-h-[600px] lg:min-h-[max(100vh,700px)]"
         style={{
           width: "100vw",
           maxWidth: "100vw",
@@ -88,33 +149,38 @@ export default function HomePage() {
         }}
         aria-label="Hero: Premium Cotton & Lawn"
       >
-        {/* Background image: sharp, no blur */}
+        {/* Background image (original) */}
         <div className="absolute inset-0 z-0">
           <Image
-            src={HERO_IMAGE}
+            src={HERO_BG_IMAGE}
             alt="NOOR-G premium clothing in an elegant setting"
             fill
             className="object-cover object-center"
             priority
             sizes="100vw"
           />
-          {/* Dark overlay: linear gradient left to right for readability */}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/70 to-black/50" aria-hidden />
+          {/* Overlay for readability */}
+          <div
+            className="pointer-events-none absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/40"
+            aria-hidden
+          />
         </div>
 
-        {/* Content: max-w 1400px, responsive padding, centered */}
+        {/* Content: text left + brothers box right */}
         <motion.div
-          className="relative z-10 mx-auto flex w-full max-w-[1400px] flex-col items-center justify-center px-6 text-center md:px-8 lg:px-12"
+          className="relative z-10 mx-auto w-full max-w-[1400px] px-6 md:px-8 lg:px-12"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
         >
-          <div className="flex max-w-[900px] flex-col items-center">
+          <div className="grid items-center gap-10 sm:gap-12 lg:grid-cols-2 lg:items-stretch lg:gap-28 xl:gap-32">
+            {/* LEFT: Text */}
+            <div className="flex flex-col items-center text-center lg:h-full lg:items-start lg:justify-center lg:text-left">
             <motion.h1
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.6 }}
-              className="mb-6 text-center text-4xl font-extrabold leading-tight text-white tracking-tight md:text-5xl md:mb-6 lg:mb-6 lg:text-6xl lg:text-7xl"
+              className="mb-5 text-[34px] font-extrabold leading-tight text-white tracking-tight sm:text-4xl md:text-5xl md:mb-6 lg:mb-6 lg:text-6xl lg:text-7xl"
               style={{
                 textShadow: "0 2px 20px rgba(0,0,0,0.3)",
                 letterSpacing: "-0.02em",
@@ -130,13 +196,13 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
-              className="mx-auto mb-8 max-w-[700px] text-base font-normal leading-relaxed text-white/90 md:mb-10 md:text-lg lg:mb-12 lg:text-xl"
+              className="mb-7 max-w-[680px] text-[15px] font-normal leading-relaxed text-white/90 sm:text-base md:mb-10 md:text-lg lg:mb-12 lg:text-xl"
             >
               Timeless pieces crafted for comfort and style. Discover our latest collections.
             </motion.p>
 
             <motion.div
-              className="flex w-full flex-col items-stretch gap-4 md:flex-row md:justify-center md:gap-6"
+              className="flex w-full flex-col items-stretch gap-4 md:flex-row md:gap-6 lg:w-auto"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.6 }}
@@ -164,6 +230,38 @@ export default function HomePage() {
               >
                 <span className="md:px-[0.375rem]">Explore Collections</span>
               </Link>
+            </motion.div>
+          </div>
+
+            {/* RIGHT: Brothers box */}
+            <motion.div
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.35, duration: 0.6 }}
+              className="mx-auto w-full max-w-[520px] lg:mx-0 lg:flex lg:h-full lg:max-w-none lg:items-stretch"
+            >
+              <div className="flex h-full w-full flex-col rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur-md sm:p-4 md:p-5">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:flex-1">
+                  <div className="relative aspect-[1/1] overflow-hidden rounded-xl border border-white/15 sm:aspect-[3/4] lg:h-full lg:aspect-auto">
+                    <Image
+                      src={HERO_LEFT_IMAGE}
+                      alt="NOOR-G brand photo"
+                      fill
+                      className="object-cover object-top scale-[1.28]"
+                      sizes="(max-width: 640px) 50vw, 260px"
+                    />
+                  </div>
+                  <div className="relative aspect-[1/1] overflow-hidden rounded-xl border border-white/15 sm:aspect-[3/4] lg:h-full lg:aspect-auto">
+                    <Image
+                      src={HERO_RIGHT_IMAGE}
+                      alt="NOOR-G brand photo"
+                      fill
+                      className="object-cover object-center scale-[1.28]"
+                      sizes="(max-width: 640px) 50vw, 260px"
+                    />
+                  </div>
+                </div>
+              </div>
             </motion.div>
           </div>
         </motion.div>
@@ -295,40 +393,54 @@ export default function HomePage() {
                   transition={{ duration: 0.35 }}
                   className="rounded-2xl bg-white p-6 shadow-sm md:p-8"
                 >
-                  <div className="flex gap-0.5 text-[#C4A747]" role="img" aria-label={`${TESTIMONIALS[testimonialIndex].rating} out of 5 stars`}>
-                    {Array.from({ length: 5 }, (_, j) => (
-                      <span key={j} className="text-2xl lg:text-2xl">★</span>
-                    ))}
-                  </div>
-                  <p className="mt-4 text-base italic leading-relaxed text-[#333333] md:text-lg md:leading-[1.8]">
-                    &ldquo;{TESTIMONIALS[testimonialIndex].text}&rdquo;
-                  </p>
-                  <p className="mt-6 text-base font-semibold text-[#333333]">
-                    {TESTIMONIALS[testimonialIndex].name}
-                  </p>
-                  <p className="mt-1 text-sm text-[#333333]/70">
-                    {TESTIMONIALS[testimonialIndex].city}
-                  </p>
+                  {testimonials.length === 0 ? (
+                    <p className="text-sm text-[#333333]/70">No reviews yet.</p>
+                  ) : (
+                    <>
+                      <div
+                        className="flex gap-0.5 text-[#C4A747]"
+                        role="img"
+                        aria-label={`${testimonials[testimonialIndex].rating} out of 5 stars`}
+                      >
+                        {Array.from({ length: 5 }, (_, j) => (
+                          <span key={j} className="text-2xl lg:text-2xl">
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                      <p className="mt-4 text-base italic leading-relaxed text-[#333333] md:text-lg md:leading-[1.8]">
+                        &ldquo;{testimonials[testimonialIndex].comment}&rdquo;
+                      </p>
+                      <p className="mt-6 text-base font-semibold text-[#333333]">
+                        {testimonials[testimonialIndex].user?.name ?? "Anonymous"}
+                      </p>
+                      <p className="mt-1 text-sm text-[#333333]/70">
+                        {testimonials[testimonialIndex].product?.name ?? "Product"}
+                      </p>
+                    </>
+                  )}
                 </motion.div>
               </AnimatePresence>
-              <div className="mt-6 flex justify-center gap-2">
-                {TESTIMONIALS.map((_, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => setTestimonialIndex(i)}
-                    className={`h-2 rounded-full transition-all ${
-                      i === testimonialIndex ? "w-6 bg-[#C4A747]" : "w-2 bg-[#333333]/30"
-                    }`}
-                    aria-label={`Go to testimonial ${i + 1}`}
-                  />
-                ))}
-              </div>
+              {testimonials.length > 1 && (
+                <div className="mt-6 flex justify-center gap-2">
+                  {testimonials.map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setTestimonialIndex(i)}
+                      className={`h-2 rounded-full transition-all ${
+                        i === testimonialIndex ? "w-6 bg-[#C4A747]" : "w-2 bg-[#333333]/30"
+                      }`}
+                      aria-label={`Go to review ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           {/* Tablet: 2 cards */}
           <div className="hidden grid-cols-2 gap-6 md:grid lg:hidden">
-            {TESTIMONIALS.slice(0, 2).map((t, i) => (
+            {testimonials.slice(0, 2).map((t, i) => (
               <motion.div
                 key={t.id}
                 {...sectionFade}
@@ -340,15 +452,15 @@ export default function HomePage() {
                     <span key={j}>★</span>
                   ))}
                 </div>
-                <p className="mt-4 text-lg italic leading-[1.8] text-[#333333]">&ldquo;{t.text}&rdquo;</p>
-                <p className="mt-6 text-base font-semibold text-[#333333]">{t.name}</p>
-                <p className="mt-1 text-sm text-[#333333]/70">{t.city}</p>
+                <p className="mt-4 text-lg italic leading-[1.8] text-[#333333]">&ldquo;{t.comment}&rdquo;</p>
+                <p className="mt-6 text-base font-semibold text-[#333333]">{t.user?.name ?? "Anonymous"}</p>
+                <p className="mt-1 text-sm text-[#333333]/70">{t.product?.name ?? "Product"}</p>
               </motion.div>
             ))}
           </div>
           {/* Desktop: 3 cards */}
           <div className="hidden grid-cols-3 gap-8 lg:grid">
-            {TESTIMONIALS.map((t, i) => (
+            {testimonials.slice(0, 3).map((t, i) => (
               <motion.div
                 key={t.id}
                 initial={{ opacity: 0, y: 24 }}
@@ -362,9 +474,9 @@ export default function HomePage() {
                     <span key={j}>★</span>
                   ))}
                 </div>
-                <p className="mt-4 text-lg italic leading-[1.8] text-[#333333]">&ldquo;{t.text}&rdquo;</p>
-                <p className="mt-6 text-base font-semibold text-[#333333]">{t.name}</p>
-                <p className="mt-1 text-sm text-[#333333]/70">{t.city}</p>
+                <p className="mt-4 text-lg italic leading-[1.8] text-[#333333]">&ldquo;{t.comment}&rdquo;</p>
+                <p className="mt-6 text-base font-semibold text-[#333333]">{t.user?.name ?? "Anonymous"}</p>
+                <p className="mt-1 text-sm text-[#333333]/70">{t.product?.name ?? "Product"}</p>
               </motion.div>
             ))}
           </div>

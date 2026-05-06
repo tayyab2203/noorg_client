@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Heart,
@@ -36,6 +37,7 @@ import { useCartStore } from "@/store/cartStore";
 import { useWishlistStore } from "@/store/wishlistStore";
 import { ProductCard } from "@/components/product/ProductCard";
 import { Container } from "@/components/layout/Container";
+import { useToast } from "@/components/ui/toast";
 import { formatPrice } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { COLOR_SWATCH_HEX, ROUTES } from "@/lib/constants";
@@ -45,13 +47,17 @@ const GOLD = "#C4A747";
 const CREAM = "#F5F3EE";
 const DARK = "#333333";
 
-// Mock reviews data
-const MOCK_REVIEWS = [
-  { id: "1", author: "Sarah K.", date: "2024-01-15", rating: 5, comment: "Absolutely love this! The quality is exceptional and it fits perfectly. Will definitely order more.", verified: true, helpful: 12 },
-  { id: "2", author: "Ayesha M.", date: "2024-01-10", rating: 5, comment: "Beautiful fabric and stunning design. Received many compliments.", verified: true, helpful: 8 },
-  { id: "3", author: "Fatima R.", date: "2024-01-05", rating: 4, comment: "Good quality but sizing runs slightly small. Order one size up.", verified: true, helpful: 15 },
-  { id: "4", author: "Zainab H.", date: "2023-12-28", rating: 5, comment: "Fast delivery and exactly as pictured. Highly recommend!", verified: false, helpful: 6 },
-];
+type PublicReview = {
+  id: string;
+  productId: string;
+  userId: string;
+  rating: number;
+  comment: string;
+  status: string;
+  helpfulCount: number;
+  createdAt: string;
+  user: { name: string; image: string | null };
+};
 
 async function fetchProduct(slug: string): Promise<Product> {
   const res = await fetch(`/api/products?slug=${encodeURIComponent(slug)}`);
@@ -63,6 +69,28 @@ async function fetchProducts(): Promise<Product[]> {
   const res = await fetch("/api/products");
   if (!res.ok) throw new Error("Failed to fetch");
   return res.json();
+}
+
+async function fetchReviews(productId: string): Promise<PublicReview[]> {
+  const res = await fetch(`/api/reviews?productId=${encodeURIComponent(productId)}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch reviews");
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+async function submitReview(payload: { productId: string; rating: number; comment: string }) {
+  const res = await fetch("/api/reviews", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data?.error ?? "Failed to submit review");
+  }
+  return data as PublicReview;
 }
 
 function StarRating({ rating, size = "md" }: { rating: number; size?: "sm" | "md" | "lg" }) {
@@ -238,6 +266,8 @@ function ProductPageSkeleton() {
 export default function ProductSlugPage() {
   const params = useParams();
   const slug = typeof params.slug === "string" ? params.slug : "";
+  const { status: authStatus } = useSession();
+  const toast = useToast();
 
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
@@ -267,6 +297,12 @@ export default function ProductSlugPage() {
     queryFn: fetchProducts,
   });
 
+  const { data: reviews = [], refetch: refetchReviews, isFetching: reviewsLoading } = useQuery({
+    queryKey: ["reviews", product?.id],
+    queryFn: () => fetchReviews(product!.id),
+    enabled: !!product?.id,
+  });
+
   const relatedProducts = useMemo(() => {
     if (!product) return [];
     return allProducts
@@ -278,32 +314,23 @@ export default function ProductSlugPage() {
 
   useEffect(() => {
     if (product?.variants?.length) {
-      setSelectedSize(product.variants[0].size);
+      setSelectedSize("STANDARD");
       setSelectedColor(product.variants[0].color);
     }
   }, [product?.id]);
 
   const selectedVariant = useMemo(() => {
     if (!product?.variants?.length) return null;
-    return (
-      product.variants.find(
-        (v) =>
-          v.size === (selectedSize ?? product.variants[0].size) &&
-          v.color === (selectedColor ?? product.variants[0].color)
-      ) ?? product.variants[0]
-    );
-  }, [product, selectedSize, selectedColor]);
+    const color = selectedColor ?? product.variants[0].color;
+    return product.variants.find((v) => v.color === color) ?? product.variants[0];
+  }, [product, selectedColor]);
 
   const inStock = selectedVariant ? selectedVariant.stock > 0 : false;
 
   const availableSizes = useMemo(() => {
     if (!product) return [];
-    const bySize = new Map<string, number>();
-    product.variants.forEach((v) => {
-      const cur = bySize.get(v.size) ?? 0;
-      bySize.set(v.size, cur + v.stock);
-    });
-    return Array.from(bySize.entries()).map(([size, stock]) => ({ size, stock }));
+    const totalStock = product.variants.reduce((sum, v) => sum + (v.stock ?? 0), 0);
+    return [{ size: "STANDARD", stock: totalStock }];
   }, [product]);
 
   const availableColors = useMemo(() => {
@@ -355,13 +382,19 @@ export default function ProductSlugPage() {
     }
   };
 
-  // Reviews stats
-  const reviewCount = MOCK_REVIEWS.length;
-  const avgRating = MOCK_REVIEWS.reduce((sum, r) => sum + r.rating, 0) / reviewCount;
+  // Reviews stats (real data)
+  const reviewCount = reviews.length;
+  const avgRating =
+    reviewCount > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount : 0;
   const ratingCounts = [5, 4, 3, 2, 1].map((stars) => ({
     stars,
-    count: MOCK_REVIEWS.filter((r) => r.rating === stars).length,
+    count: reviews.filter((r) => r.rating === stars).length,
   }));
+
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
   // Discount calculation
   const onSale = product?.salePrice != null && product.salePrice < product.price;
@@ -597,33 +630,11 @@ export default function ProductSlugPage() {
               </div>
             </div>
 
-            {/* Size Selector */}
+            {/* Standard size only (no selector) */}
             <div className="mt-6 lg:mt-8">
-              <p className="mb-3 text-sm font-semibold text-[#333333]">Select Size</p>
-              <div className="flex flex-wrap gap-3">
-                {availableSizes.map(({ size, stock: sizeStock }) => {
-                  const disabled = sizeStock === 0;
-                  const active = (selectedSize ?? product.variants[0]?.size) === size;
-                  return (
-                    <button
-                      key={size}
-                      type="button"
-                      disabled={disabled}
-                      onClick={() => setSelectedSize(size)}
-                      className={cn(
-                        "flex h-12 w-12 items-center justify-center rounded-lg border-2 text-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-[#C4A747] focus:ring-offset-2",
-                        "max-md:h-10 max-md:w-10",
-                        active
-                          ? "border-[#C4A747] bg-[#C4A747] text-white"
-                          : "border-[#ddd] bg-white text-[#333333] hover:border-[#C4A747] hover:bg-[#F5F3EE]",
-                        disabled && "cursor-not-allowed opacity-30 line-through"
-                      )}
-                      style={{ borderWidth: active ? "3px" : "2px" }}
-                    >
-                      {size}
-                    </button>
-                  );
-                })}
+              <p className="mb-2 text-sm font-semibold text-[#333333]">Size</p>
+              <div className="inline-flex items-center rounded-lg border-2 border-[#ddd] bg-white px-4 py-2 text-sm font-semibold text-[#333333]">
+                Standard
               </div>
             </div>
 
@@ -847,28 +858,92 @@ export default function ProductSlugPage() {
               <Button
                 variant="outline"
                 className="mt-6 w-full border-[#C4A747] text-[#333333] hover:bg-[#C4A747]/10"
+                onClick={() => {
+                  if (authStatus !== "authenticated") {
+                    toast.info("Please login to write a review.");
+                    return;
+                  }
+                  setReviewOpen((v) => !v);
+                }}
               >
                 Write a Review
               </Button>
+
+              {reviewOpen && (
+                <div className="mt-6 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-[#333333]">Your rating</p>
+                    <select
+                      value={reviewRating}
+                      onChange={(e) => setReviewRating(Number(e.target.value))}
+                      className="h-10 rounded-lg border border-[#ddd] bg-white px-3 text-sm"
+                    >
+                      {[5, 4, 3, 2, 1].map((v) => (
+                        <option key={v} value={v}>
+                          {v} star{v === 1 ? "" : "s"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="Share your experience..."
+                    rows={4}
+                    className="w-full rounded-lg border border-[#ddd] bg-white p-3 text-sm outline-none focus:border-[#C4A747]"
+                  />
+                  <Button
+                    className="w-full"
+                    style={{ backgroundColor: GOLD, color: DARK }}
+                    disabled={reviewSubmitting || !product?.id || reviewComment.trim().length < 3}
+                    onClick={async () => {
+                      if (!product?.id) return;
+                      setReviewSubmitting(true);
+                      try {
+                        await submitReview({
+                          productId: product.id,
+                          rating: reviewRating,
+                          comment: reviewComment,
+                        });
+                        toast.success("Review submitted for approval.");
+                        setReviewComment("");
+                        setReviewOpen(false);
+                        await refetchReviews();
+                      } catch (e) {
+                        toast.error((e as Error)?.message ?? "Failed to submit review");
+                      } finally {
+                        setReviewSubmitting(false);
+                      }
+                    }}
+                  >
+                    {reviewSubmitting ? "Submitting..." : "Submit Review"}
+                  </Button>
+                </div>
+              )}
             </div>
 
             {/* Review Cards */}
             <div className="space-y-6">
-              {MOCK_REVIEWS.map((review) => (
+              {reviewsLoading && (
+                <div className="rounded-xl border border-[#333333]/10 bg-white p-6 text-sm text-[#333333]/70">
+                  Loading reviews...
+                </div>
+              )}
+              {!reviewsLoading && reviews.length === 0 && (
+                <div className="rounded-xl border border-dashed border-[#ddd] bg-[#F5F3EE]/50 p-10 text-center">
+                  <p className="text-lg font-semibold text-[#333333]">No reviews yet</p>
+                  <p className="mt-1 text-sm text-[#333333]/70">Be the first to review this product.</p>
+                </div>
+              )}
+              {reviews.map((review) => (
                 <div
                   key={review.id}
                   className="rounded-xl border border-[#333333]/10 bg-white p-6"
                 >
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="font-semibold text-[#333333]">{review.author}</span>
-                    {review.verified && (
-                      <span className="flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                        <Check className="h-3 w-3" />
-                        Verified Purchase
-                      </span>
-                    )}
+                    <span className="font-semibold text-[#333333]">{review.user?.name ?? "Customer"}</span>
                     <span className="text-sm text-[#333333]/50" suppressHydrationWarning>
-                      {new Date(review.date).toLocaleDateString("en-US", {
+                      {new Date(review.createdAt).toLocaleDateString("en-US", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
@@ -884,7 +959,7 @@ export default function ProductSlugPage() {
                     className="mt-4 flex items-center gap-2 text-sm text-[#333333]/60 transition hover:text-[#C4A747]"
                   >
                     <ThumbsUp className="h-4 w-4" />
-                    Helpful ({review.helpful})
+                    Helpful ({review.helpfulCount ?? 0})
                   </button>
                 </div>
               ))}

@@ -57,7 +57,10 @@ export async function confirmPayment(orderId: string): Promise<{ confirmed: bool
 
 /** Fetch all orders (admin only) */
 export async function getAdminOrders(): Promise<OrderResponse[]> {
-  const res = await apiClient.get<{ data?: OrderResponse[] } | OrderResponse[]>("/api/admin/orders");
+  const res = await apiClient.get<{ data?: OrderResponse[] } | OrderResponse[]>("/api/admin/orders", {
+    // Admin lists can be slow on cold start / large datasets.
+    timeout: 120000,
+  });
   const data = unwrapData(res.data, []);
   return Array.isArray(data) ? data : [];
 }

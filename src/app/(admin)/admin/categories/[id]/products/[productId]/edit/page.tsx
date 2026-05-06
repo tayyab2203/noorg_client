@@ -13,7 +13,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ProductImage, ProductVariant } from "@/types";
 
-const defaultVariant: ProductVariant = { size: "M", color: "Black", stock: 0, variantSKU: "" };
+const STANDARD_SIZE = "STANDARD";
+const defaultVariant: ProductVariant = { size: STANDARD_SIZE, color: "Black", stock: 0, variantSKU: "" };
 const defaultImage: ProductImage = { url: "", altText: "", order: 0 };
 
 export default function AdminCategoryProductEditPage() {
@@ -55,7 +56,11 @@ export default function AdminCategoryProductEditPage() {
     setStatus(product.status ?? PRODUCT_STATUS.ACTIVE);
     setIsNewArrival(product.isNewArrival ?? false);
     setImages(product.images?.length ? product.images : [{ ...defaultImage }]);
-    setVariants(product.variants?.length ? product.variants : [{ ...defaultVariant, variantSKU: "" }]);
+    setVariants(
+      product.variants?.length
+        ? product.variants.map((v) => ({ ...v, size: STANDARD_SIZE }))
+        : [{ ...defaultVariant, variantSKU: "" }]
+    );
     setInitialized(true);
   }, [product, initialized]);
 
@@ -98,7 +103,9 @@ export default function AdminCategoryProductEditPage() {
       setError("Invalid price");
       return;
     }
-    const variantsValid = variants.filter((v) => v.variantSKU.trim());
+    const variantsValid = variants
+      .filter((v) => v.variantSKU.trim())
+      .map((v) => ({ ...v, size: STANDARD_SIZE }));
     if (variantsValid.length === 0) {
       setError("At least one variant with SKU required");
       return;
@@ -305,7 +312,9 @@ export default function AdminCategoryProductEditPage() {
           <div className="space-y-2">
             {variants.map((v, i) => (
               <div key={i} className="flex flex-wrap items-center gap-2 rounded-lg border border-[#eee] p-2">
-                <Input placeholder="Size" value={v.size} onChange={(e) => updateVariant(i, "size", e.target.value)} className="w-20 border-[#ddd]" />
+                <div className="flex h-10 items-center rounded-lg border border-[#ddd] bg-[#f9fafb] px-3 text-sm text-[#333333]">
+                  Standard
+                </div>
                 <Input placeholder="Color" value={v.color} onChange={(e) => updateVariant(i, "color", e.target.value)} className="w-24 border-[#ddd]" />
                 <Input type="number" min="0" placeholder="Stock" value={v.stock} onChange={(e) => updateVariant(i, "stock", parseInt(e.target.value, 10) || 0)} className="w-20 border-[#ddd]" />
                 <Input placeholder="Variant SKU" value={v.variantSKU} onChange={(e) => updateVariant(i, "variantSKU", e.target.value)} className="flex-1 min-w-[120px] border-[#ddd]" />

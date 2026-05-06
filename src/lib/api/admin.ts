@@ -122,6 +122,8 @@ async function getAdminPayments(params?: { method?: string; status?: string }): 
 async function getAdminInventory(filter?: "all" | "low_stock" | "out_of_stock"): Promise<InventoryVariantItem[]> {
   const res = await apiClient.get<{ data?: InventoryVariantItem[] } | InventoryVariantItem[]>("/api/admin/inventory", {
     params: filter && filter !== "all" ? { filter } : undefined,
+    // Inventory aggregation can be slow on cold start / large catalogs.
+    timeout: 120000,
   });
   const data = unwrapData(res.data, []);
   return Array.isArray(data) ? data : [];
