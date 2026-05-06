@@ -15,6 +15,19 @@ export type AdminReviewRow = {
   user: { id: string; name: string; image: string | null };
 };
 
+type ReviewLeanRow = {
+  _id: mongoose.Types.ObjectId;
+  productId: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId;
+  rating: number;
+  comment: string;
+  status: string;
+  userName?: string;
+  userImage?: string | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
+
 /** GET /api/admin/reviews?status=PENDING|APPROVED|REJECTED (default PENDING) */
 export async function GET(request: Request) {
   const forbidden = await requireAdmin(request);
@@ -26,7 +39,7 @@ export async function GET(request: Request) {
     const status = (searchParams.get("status") ?? REVIEW_STATUS.PENDING) as string;
     const limit = Math.max(1, Math.min(200, Number(searchParams.get("limit") ?? 50) || 50));
 
-    const rows = await Review.find(
+    const rows = (await Review.find(
       { status },
       {
         productId: 1,
@@ -42,9 +55,9 @@ export async function GET(request: Request) {
     )
       .sort({ createdAt: -1 })
       .limit(limit)
-      .lean();
+      .lean()) as unknown as ReviewLeanRow[];
 
-    const productIds = Array.from(new Set(rows.map((r) => (r.productId as mongoose.Types.ObjectId).toString())));
+    const productIds = Array.from(new Set(rows.map((r) => r.productId.toString())));
     const products = await Product.find(
       { _id: { $in: productIds.map((id) => new mongoose.Types.ObjectId(id)) } },
       { name: 1, slug: 1 }
@@ -57,19 +70,19 @@ export async function GET(request: Request) {
     );
 
     const payload: AdminReviewRow[] = rows.map((r) => {
-      const pid = (r.productId as mongoose.Types.ObjectId).toString();
-      const uid = (r.userId as mongoose.Types.ObjectId).toString();
+      const pid = r.productId.toString();
+      const uid = r.userId.toString();
       return {
-        id: (r._id as mongoose.Types.ObjectId).toString(),
+        id: r._id.toString(),
         product: productsById.get(pid) ?? { id: pid, name: "Product", slug: "" },
-        rating: (r as { rating: number }).rating,
-        comment: (r as { comment: string }).comment,
-        status: (r as { status: string }).status,
-        createdAt: ((r as { createdAt?: Date; updatedAt?: Date }).createdAt ?? (r as { updatedAt?: Date }).updatedAt ?? new Date()).toISOString(),
+        rating: r.rating,
+        comment: r.comment,
+        status: r.status,
+        createdAt: (r.createdAt ?? r.updatedAt ?? new Date()).toISOString(),
         user: {
           id: uid,
-          name: ((r as { userName?: string }).userName ?? "").trim() || "Anonymous",
-          image: (r as { userImage?: string | null }).userImage ?? null,
+          name: (r.userName ?? "").trim() || "Anonymous",
+          image: r.userImage ?? null,
         },
       };
     });
