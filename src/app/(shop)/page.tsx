@@ -247,7 +247,7 @@ export default function HomePage() {
                       src={HERO_LEFT_IMAGE}
                       alt="NOOR-G brand photo"
                       fill
-                      className="object-cover object-top scale-[1.28]"
+                      className="object-cover object-[50%_20%] scale-[1.12] sm:object-top sm:scale-[1.28]"
                       sizes="(max-width: 640px) 50vw, 260px"
                     />
                   </div>
@@ -256,7 +256,7 @@ export default function HomePage() {
                       src={HERO_RIGHT_IMAGE}
                       alt="NOOR-G brand photo"
                       fill
-                      className="object-cover object-center scale-[1.28]"
+                      className="object-cover object-[50%_18%] scale-[1.12] sm:object-center sm:scale-[1.28]"
                       sizes="(max-width: 640px) 50vw, 260px"
                     />
                   </div>

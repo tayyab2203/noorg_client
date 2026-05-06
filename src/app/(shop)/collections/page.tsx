@@ -87,12 +87,20 @@ export default function CollectionsPage() {
                   className="group relative block overflow-hidden rounded-xl md:min-h-[400px]"
                 >
                   <div className="relative aspect-[3/4] min-h-[320px] overflow-hidden rounded-xl md:min-h-[400px]">
+                    {/*
+                      Vercel Blob images can cause optimizer upstream timeouts in some regions.
+                      Use unoptimized for those URLs so the browser fetches directly.
+                    */}
                     <Image
                       src={c.image || "/placeholder.svg"}
                       alt={c.name}
                       fill
                       className="object-cover transition-all duration-500 ease-out group-hover:scale-[1.08]"
                       sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      unoptimized={
+                        (c.image ?? "").includes(".public.blob.vercel-storage.com/") ||
+                        (c.image ?? "").includes(".blob.vercel-storage.com/")
+                      }
                     />
                     <div
                       className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent"

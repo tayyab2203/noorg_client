@@ -27,6 +27,11 @@ export function ResponsiveImage({
   className,
   ...props
 }: ResponsiveImageProps) {
+  const rawSrc = typeof src === "string" ? src : "";
+  const isVercelBlob =
+    rawSrc.includes(".public.blob.vercel-storage.com/") ||
+    rawSrc.includes(".blob.vercel-storage.com/");
+
   return (
     <Image
       src={src}
@@ -34,6 +39,9 @@ export function ResponsiveImage({
       sizes={sizes}
       priority={priority}
       className={className}
+      // Avoid Next.js optimizer upstream timeouts for Vercel Blob assets.
+      // Let the browser fetch directly from the Blob CDN instead.
+      unoptimized={isVercelBlob}
       {...props}
     />
   );

@@ -23,12 +23,11 @@ export async function GET(
     if (isSessionDecryptionError(err)) {
       return NextResponse.json({ user: null, expires: null });
     }
-    // Log error for debugging but return JSON to avoid HTML error pages
+    // For browser navigations (e.g. /api/auth/error), don't return a JSON 500.
+    // Redirect to login so the user isn't stuck on a server error page.
     console.error("[NextAuth] GET error:", err);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    const url = new URL(request.url);
+    return NextResponse.redirect(new URL("/login?error=auth", url.origin));
   }
 }
 
@@ -41,11 +40,9 @@ export async function POST(
     await context.params;
     return await handlers.POST(request);
   } catch (err) {
-    // Log error for debugging but return JSON to avoid HTML error pages
+    // Avoid JSON 500 responses that break NextAuth's redirect/error flow.
     console.error("[NextAuth] POST error:", err);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    const url = new URL(request.url);
+    return NextResponse.redirect(new URL("/login?error=auth", url.origin));
   }
 }

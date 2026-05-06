@@ -112,6 +112,11 @@ export function ProductCard({
   const images = product.images;
   const primaryImage = images[0]?.url?.trim() || "/placeholder.svg";
   const secondaryImage = images[1]?.url?.trim() || primaryImage;
+  const isVercelBlob =
+    primaryImage.includes(".public.blob.vercel-storage.com/") ||
+    primaryImage.includes(".blob.vercel-storage.com/") ||
+    secondaryImage.includes(".public.blob.vercel-storage.com/") ||
+    secondaryImage.includes(".blob.vercel-storage.com/");
   const firstVariant = product.variants[0];
   const variantSKU = firstVariant?.variantSKU;
   const inStock = product.variants.some((v) => v.stock > 0);
@@ -153,6 +158,7 @@ export function ProductCard({
                 showQuickActions && "scale-[1.08]"
               )}
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              unoptimized={isVercelBlob}
             />
             {secondaryImage !== primaryImage && (
               <Image
@@ -165,6 +171,7 @@ export function ProductCard({
                 )}
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                 aria-hidden
+                unoptimized={isVercelBlob}
               />
             )}
           </span>

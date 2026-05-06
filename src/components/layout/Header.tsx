@@ -46,6 +46,10 @@ export function Header() {
     setMounted(true);
   }, []);
 
+  // Avoid hydration mismatch: pathname-based "active" styles can differ
+  // between server HTML and the first client render.
+  const activePath = mounted ? (pathname ?? "") : "";
+
   const cartCount = isAuthenticated && apiCart?.items
     ? apiCart.items.reduce((sum, i) => sum + i.quantity, 0)
     : zustandCartCount;
@@ -114,7 +118,7 @@ export function Header() {
             href={ROUTES.home}
             className={cn(
               "text-base font-medium transition-colors hover:text-[#C4A747]",
-              pathname === ROUTES.home ? "text-[#C4A747]" : "text-[#333333]"
+              activePath === ROUTES.home ? "text-[#C4A747]" : "text-[#333333]"
             )}
           >
             Home
@@ -125,7 +129,7 @@ export function Header() {
               href={ROUTES.collections}
               className={cn(
                 "inline-flex items-center text-base font-medium transition-colors hover:text-[#C4A747]",
-                pathname === ROUTES.collections || pathname.startsWith(`${ROUTES.collections}/`) && pathname !== ROUTES.newArrivals
+                activePath === ROUTES.collections || (activePath.startsWith(`${ROUTES.collections}/`) && activePath !== ROUTES.newArrivals)
                   ? "text-[#C4A747]"
                   : "text-[#333333]"
               )}
@@ -143,7 +147,7 @@ export function Header() {
                   href={`${ROUTES.collections}/${c.slug}`}
                   className={cn(
                     "block px-4 py-2.5 text-sm font-medium text-[#333333] transition-colors hover:bg-[#F5F3EE] hover:text-[#C4A747]",
-                    pathname === `${ROUTES.collections}/${c.slug}` && "bg-[#F5F3EE] text-[#C4A747]"
+                    activePath === `${ROUTES.collections}/${c.slug}` && "bg-[#F5F3EE] text-[#C4A747]"
                   )}
                 >
                   {c.name}
@@ -163,7 +167,7 @@ export function Header() {
             href={ROUTES.newArrivals}
             className={cn(
               "text-base font-medium transition-colors hover:text-[#C4A747]",
-              pathname === ROUTES.newArrivals ? "text-[#C4A747]" : "text-[#333333]"
+              activePath === ROUTES.newArrivals ? "text-[#C4A747]" : "text-[#333333]"
             )}
           >
             New Arrivals
@@ -172,7 +176,7 @@ export function Header() {
             href={ROUTES.sale}
             className={cn(
               "text-base font-medium transition-colors hover:text-[#C4A747]",
-              pathname === ROUTES.sale ? "text-[#C4A747]" : "text-[#333333]"
+              activePath === ROUTES.sale ? "text-[#C4A747]" : "text-[#333333]"
             )}
           >
             Sale
@@ -183,7 +187,7 @@ export function Header() {
               href={href}
               className={cn(
                 "text-base font-medium transition-colors hover:text-[#C4A747]",
-                pathname === href ? "text-[#C4A747]" : "text-[#333333]"
+                activePath === href ? "text-[#C4A747]" : "text-[#333333]"
               )}
             >
               {label}
